@@ -1,4 +1,3 @@
-import script1 as sc1 
 import RPi.GPIO as GPIO
 import time
 
@@ -17,35 +16,40 @@ bin_depth = 8
 time_sleep = 0.001
 
 
+def num2dac(val):
+    binary_string = bin(val)[2:].zfill(bin_depth)
+    binary_array = [int(binary_string[bin_depth - 1 - i]) for i in range(bin_depth)]
+    GPIO.output(D, binary_array)    
+
+
 def all_out():
     GPIO.output(D, 0)
 
 
-def num2dac(val):
-    binary_string = bin(val)[2:].zfill(bin_depth)
-    binary_array = [int(binary_string[bin_depth - 1 - i]) for i in range(bin_depth)]
-    GPIO.output(D, binary_array)  
-
-
 def guess():
-    k = 0
-    for i in range(bin_depth):
-        k += 2 ** (bin_depth - 1 - i)
-        num2dac(k)
+    for i in range(2 ** bin_depth):
+        num2dac(i)
         time.sleep(time_sleep)
         if GPIO.input(comp) == 0:
-            k -= 2 ** (bin_depth - 1 - i)
-    print(f'Digital value: {k}, ', 'Analog value :{0:.{1}f} V'.format(k * voltage_step, rounded))
+            return f'{0.15 * i}V'
 
 
 if __name__ == '__main__':
     try:
         GPIO.output(V_pin, 1)
         while True:
+            value = int(input('Enter value (-1 to exit) > '))
             all_out()
-            guess()
-    except Exception:
-        print('Something went wrong...')
+            if value == -1:
+                break
+            if value < 0 or value > 255:
+                raise Exception
+            num2dac(value)
+            print(f'{value} = ' + '{0:.{1}f}'.format(value * voltage_step, rounded))
+    # except TypeError:
+    #     pass
+    # except Exception:
+    #     pass
     finally:
-        print('Quit')
         all_out()
+        print('Quit')
